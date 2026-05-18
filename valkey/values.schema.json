@@ -183,6 +183,9 @@
                     },
                     "server": {
                       "type": "string"
+                    },
+                    "tunnel": {
+                      "type": "string"
                     }
                   }
                 }
@@ -190,34 +193,6 @@
             },
             "securityContext": {
               "type": "object"
-            },
-            "sentinelWatcher": {
-              "type": "object",
-              "properties": {
-                "image": {
-                  "type": "object",
-                  "properties": {
-                    "registry": {
-                      "type": "string"
-                    },
-                    "repository": {
-                      "type": "string"
-                    },
-                    "tag": {
-                      "type": "string"
-                    },
-                    "pullPolicy": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "resources": {
-                  "type": "object"
-                },
-                "securityContext": {
-                  "type": "object"
-                }
-              }
             }
           }
         },
