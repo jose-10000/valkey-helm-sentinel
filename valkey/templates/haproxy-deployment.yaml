@@ -54,14 +54,6 @@ spec:
             - name: valkey-read
               containerPort: {{ .Values.haproxy.service.readPort | default 6380 }}
               protocol: TCP
-          startupProbe:
-            {{- include "valkey.probe.haproxy" (dict "root" . "config" .Values.haproxy.probes.startup) | nindent 12 }}
-          livenessProbe:
-            {{- include "valkey.probe.haproxy" (dict "root" . "config" .Values.haproxy.probes.liveness) | nindent 12 }}
-          {{- if .Values.haproxy.probes.readiness.enabled }}
-          readinessProbe:
-            {{- include "valkey.probe.haproxy" (dict "root" . "config" .Values.haproxy.probes.readiness) | nindent 12 }}
-          {{- end }}
           volumeMounts:
             - name: haproxy-config
               mountPath: /config
