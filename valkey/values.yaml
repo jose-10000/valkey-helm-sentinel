@@ -198,7 +198,7 @@ auth:
     #   permissions: "on resetchannels -@all +auth +hello +ping +sentinel +subscribe +publish &*"
     # haproxy_watcher:
     #   passwordKey: "watcher-pwd"
-    #   permissions: "on -@all +auth +hello +ping +sentinel|master +sentinel|masters +sentinel|sentinels"
+    #   permissions: "on -@all +auth +ping +info ~* resetchannels"
 
   # Inline ACL configuration that will be appended after generated users.
   # NOTE: If using aclConfig, ensure the 'default' user is defined here.
@@ -553,7 +553,7 @@ haproxy:
   image:
     registry: docker.io
     repository: haproxy
-    tag: "2.9"
+    tag: "3.3.6"
     pullPolicy: IfNotPresent
   replicas: 3
   service:
@@ -574,29 +574,35 @@ haproxy:
       connect: 5s
       client: 1m
       server: 1m
+      # Timeout for long-lived bidirectional connections (pub/sub SUBSCRIBE).
+      # 0s = no limit — necessary for pub/sub. Change to a finite value
+      # only if you want a hard limit on idle connections.
+      tunnel: "0s"
+      maxconn: "1024"
+
+  # ACL user HAProxy uses to authenticate against Valkey for the
+  # INFO replication health check on valkey_backend_master.
+  # Must be defined in auth.aclUsers with at least +info +ping permissions.
+  # Ignored when auth.enabled is false.
+  #
+  # Credential resolution order at pod startup (entrypoint.sh):
+  #   1. Volume-mounted secret file (preferred — nothing in env or ConfigMap):
+  #        /valkey-users-secret/<passwordKey>
+  #        /valkey-auth-secret/<passwordKey>-password
+  #   2. Environment variable injected by the operator:
+  #        env:
+  #          HAPROXY_WATCHER_PASS:
+  #            valueFrom:
+  #              secretKeyRef:
+  #                name: my-secret
+  #                key: my-key
+  #
+  # Common configurations:
+  #   - default user, no auth (auth.enabled: false) → nothing to configure
+  #   - default user with password                  → watcherUser: "default"
+  #   - dedicated user with restricted permissions  → watcherUser: "my-haproxy-user"
+  watcherUser: "default"
   securityContext: {}
   extraInitContainers: []
   extraVolumeMounts: []
   extraVolumes: []
-  # Sentinel watcher sidecar: queries Sentinel for master changes and updates HAProxy
-  # backend state via HAProxy's runtime socket, enabling near-instant failover.
-  # Only deployed when replica.sentinel.enabled is true.
-  sentinelWatcher:
-    # Dedicated sentinel ACL user for the watcher. 
-    # Must be defined in auth.sentinelAclUsers
-    user: "default"
-    # Uses valkey/valkey alpine image which ships valkey-cli and busybox nc.
-    # Busybox nc supports -U (unix domain sockets) so no extra tools are needed.
-    image:
-      registry: docker.io
-      repository: valkey/valkey
-      tag: "{{ .Chart.AppVersion }}-alpine"
-      pullPolicy: IfNotPresent
-    resources: {}
-      # limits:
-      #   cpu: 50m
-      #   memory: 32Mi
-      # requests:
-      #   cpu: 10m
-      #   memory: 16Mi
-    securityContext: {}
